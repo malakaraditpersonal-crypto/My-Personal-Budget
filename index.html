@@ -371,7 +371,7 @@ const I={q(v){q=v;$('#lst').innerHTML=listH()},cur(v){S.cur=v;save();draw()},fre
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const f=A[t.dataset.a];if(f){e.preventDefault();f(t.dataset.p,t,e)}});
 document.addEventListener('input',e=>{const t=e.target.closest('[data-i]');if(t&&I[t.dataset.i])I[t.dataset.i](t.value)});
 const dots=()=>{const d=$('#dots');if(d)d.innerHTML=[0,1,2,3].map(i=>`<i class="${i<pad.length?'f':''}"></i>`).join('')};
-const GOOGLE_CLIENT_ID='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'; /* paste your Google OAuth Web Client ID here */
+const GOOGLE_CLIENT_ID='622047689146-gpdrju2hji3tkheb94lpojq7qatcq706.apps.googleusercontent.com'; /* paste your Google OAuth Web Client ID here */
 function jwt(t){let p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');while(p.length%4)p+='=';return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p),c=>c.charCodeAt(0))))}
 function gcb(r){try{const u=jwt(r.credential);S.user=Object.assign(S.user||{},{name:u.given_name||u.name||'Friend',email:u.email,pic:u.picture,google:1});save();enter()}catch(e){toast('Google sign-in failed')}}
 function ginit(n=0){const b=$('#gbtn');if(!b||!GOOGLE_CLIENT_ID)return;if(window.google&&google.accounts){google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:gcb});google.accounts.id.renderButton(b,{theme:'outline',size:'large',shape:'pill',text:'continue_with',width:280})}else if(n<25)setTimeout(()=>ginit(n+1),400)}
