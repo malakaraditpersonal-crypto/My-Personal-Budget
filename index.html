@@ -337,7 +337,7 @@ function pro(){const n=S.user&&S.user.name||'You',u=S.user||{};
  <div class="row li" id="setting-glass" data-a="glass"><div>Liquid glass<small>Frosted, translucent surfaces</small></div><button class="sw ${S.glass?'on':''}" aria-label="Toggle liquid glass"><i></i></button></div>
  <h3>Currency</h3><select id="setting-currency-select" data-i="cur">${Object.entries(CUR).map(([k,c])=>`<option value="${k}" ${k===S.cur?'selected':''}>${c[0]}  ${k} · ${c[3]}</option>`).join('')}</select><p class="mu" style="margin-top:8px">Only the symbol changes. Amounts are not converted.</p>
  <h3>Getting started</h3><button class="btn g" id="setting-tutorial" data-a="tutorial" style="margin-top:0">Replay app tutorial</button>
- <h3 id="setting-notifications">Notifications</h3><p class="mu setting-note">Helpful reminders for budgets, spending, balances and savings goals. Browser notifications need permission and this app must be opened periodically unless you connect a push service.</p><button class="btn g" id="setting-notif-enable" data-a="notifEnable" style="margin-top:0">${('Notification'in window&&Notification.permission==='granted')?'Notifications enabled':'Enable notifications'}</button><button class="btn g" id="setting-notif-test" data-a="notifTest">Send test notification</button><label id="setting-frequency-label" class="mu" for="setting-frequency" style="display:block;margin:10px 0 6px">Reminder frequency</label><select id="setting-frequency" data-i="frequency"><option value="off" ${S.notify.frequency==='off'?'selected':''}>Off</option><option value="daily" ${S.notify.frequency==='daily'?'selected':''}>Daily</option><option value="weekly" ${S.notify.frequency==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${S.notify.frequency==='monthly'?'selected':''}>Monthly</option></select><p class="mu setting-note">Budget and spending alerts are evaluated when you open the app or record an expense. Bill due-date reminders need a saved bill schedule, which this app does not currently support.</p>
+ <h3 id="setting-notifications">Notifications</h3><p id="notification-help" class="mu setting-note">${notificationSettingsText()}</p><button class="btn g" id="setting-notif-enable" data-a="notifEnable" style="margin-top:0">${notificationButtonText()}</button><button class="btn g" data-a="notifTest">Send test notification</button><label id="setting-frequency-label" class="mu" for="setting-frequency" style="display:block;margin:10px 0 6px">Reminder frequency</label><select id="setting-frequency" data-i="frequency"><option value="off" ${S.notify.frequency==='off'?'selected':''}>Off</option><option value="daily" ${S.notify.frequency==='daily'?'selected':''}>Daily</option><option value="weekly" ${S.notify.frequency==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${S.notify.frequency==='monthly'?'selected':''}>Monthly</option></select><p class="mu setting-note">Budget and spending reminders are checked while the app is open or when you record an expense. They are not scheduled while the app is closed.</p>
  <h3 id="setting-security">Security</h3><button class="btn g" id="setting-pin" data-a="pinset" style="margin-top:0">${S.user&&S.user.pin?'Change PIN':'Set a PIN'}</button><button class="btn g" id="setting-bio" data-a="bioSetup">${u.biometricId?'Manage biometric unlock':'Set up Face ID / fingerprint'}</button>${S.user&&S.user.pin?'<button class="btn g" id="setting-lock" data-a="lock">Lock app now</button><button class="btn d" id="setting-pin-remove" data-a="pinrm">Remove PIN</button>':''}${u.biometricId?'<button class="btn d" id="setting-bio-remove" data-a="bioRemove">Disable biometric unlock</button>':''}${u.google?'<button class="btn g" id="setting-google-signout" data-a="signout">Sign out of Google</button>':''}
  <h3 id="setting-drive">Google Drive sync</h3><p class="mu" id="drive-status">${driveStatusText()}</p>${u.driveSync?'<button class="btn g" data-a="driveSyncNow">Sync now</button><button class="btn d" data-a="driveOff">Disconnect Drive sync</button>':'<button class="btn g" data-a="driveConnect">Connect Google Drive sync</button>'}<p class="mu setting-note">Your backup is stored privately in this app’s Google Drive data area. To sync on another device, open this app there and connect the same Google account.</p><h3 id="setting-data">Your data</h3><p class="mu">A copy is also saved in this browser. The PIN is a screen lock, not encryption. Keep a separate backup if you need an independent copy.</p><button class="btn g" id="setting-backup" data-a="exp" data-p="json">Backup data</button><button class="btn g" id="setting-csv" data-a="exp" data-p="csv">Export transactions as CSV</button><button class="btn g" id="setting-restore" data-a="rest">Restore from backup</button><button class="btn d" id="setting-delete" data-a="wipe">Delete all data</button></section>`}
 function sheet(h,keep){const o=$('#ov');if(o&&keep){o.firstChild.innerHTML=h;return}close();const d=document.createElement('div');d.className='ov';d.id='ov';d.dataset.a='bg';d.innerHTML='<div class="sh" role="dialog" aria-modal="true" tabindex="-1">'+h+'</div>';document.body.appendChild(d);const i=d.querySelector('input:not([type=date]):not([readonly]),textarea');if(i&&matchMedia('(hover:hover)').matches)i.focus()}
@@ -354,7 +354,7 @@ function sheetF(){const t=F.type,opts=(l,v)=>l.map(x=>`<option ${x==v?'selected'
 let installPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;const b=document.getElementById("install-app");if(b)b.style.display="block"});
 window.addEventListener("appinstalled",()=>{installPrompt=null;const b=document.getElementById("install-app");if(b)b.style.display="none"});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}))}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.error('Could not register the service worker',e)))}
 const TOUR=[
  ['Your dashboard','See your total balance, monthly income and expenses, daily average, and recent activity. Use the month arrows to review another month.'],
  ['Add income, expenses and transfers','Tap the + button. Choose Expense, Income or Transfer, enter the amount, choose a category and account, then save. Transfers move money between accounts and are not counted as spending.'],
@@ -373,13 +373,50 @@ function b64u(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).
 function fromB64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
 function bioSupported(){const ua=navigator.userAgent;const ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);const android=/Android/i.test(ua);return !!((ios||android)&&window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext)}
 function bioLabel(){const ua=navigator.userAgent;return /iPhone|iPad|iPod/i.test(ua)?'Face ID / device passkey':/Android/i.test(ua)?'Fingerprint / device passkey':'device biometrics / passkey'}
-async function showNotice(title,body,tag){if(!('Notification'in window)||Notification.permission!=='granted')return false;const opts={body,tag:tag||'mpb-reminder',icon:'./favicon-96x96.png',badge:'./favicon-96x96.png'};try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,opts)}else new Notification(title,opts);return true}catch(e){try{new Notification(title,opts);return true}catch(_){return false}}}
-async function noticeOnce(key,title,body){if(S.notify.last[key])return; if(await showNotice(title,body,key)){S.notify.last[key]=1;save()}}
+function isIOSDevice(){return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function notificationPlatformIssue(){
+ if(!window.isSecureContext)return'Notifications require HTTPS or localhost.';
+ if(isIOSDevice()){
+  const standalone=navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  if(!standalone)return'On iPhone or iPad, install this app on the Home Screen and open it there. Web notifications require iOS/iPadOS 16.4 or later.';
+  if(!('Notification'in window))return'iOS/iPadOS 16.4 or later is required for Home Screen web notifications.';
+ }
+ if(!('Notification'in window))return'This browser does not support notifications.';
+ return''
+}
+function notificationSettingsText(){
+ const issue=notificationPlatformIssue();if(issue)return issue;
+ if(Notification.permission==='denied')return'Notifications are blocked in system or browser settings. Allow them there, then return to this app.';
+ if(S.notify.enabled&&Notification.permission==='granted')return'Notifications are enabled. Android and supported iOS Home Screen apps display them through the system notification service.';
+ return'Tap Enable notifications to allow system notifications. On iPhone/iPad, this must be the installed Home Screen app.'
+}
+function notificationButtonText(){
+ if(!notificationPlatformIssue()&&S.notify.enabled&&Notification.permission==='granted')return'Notifications enabled';
+ if('Notification'in window&&Notification.permission==='denied')return'Notifications blocked in settings';
+ return'Enable notifications'
+}
+let lastNotificationFailureToast=0;
+async function showNotice(title,body,tag){
+ if(notificationPlatformIssue()||!('Notification'in window)||Notification.permission!=='granted')return false;
+ const opts={body,tag:tag||'mpb-reminder',icon:'./favicon-96x96.png',badge:'./favicon-96x96.png',renotify:false};
+ try{
+  if('serviceWorker'in navigator){
+   const reg=await navigator.serviceWorker.getRegistration();
+   if(reg&&typeof reg.showNotification==='function'){await reg.showNotification(title,opts);return true}
+  }
+  new Notification(title,opts);return true
+ }catch(e){console.error('Could not display notification',e);return false}
+}
+async function noticeOnce(key,title,body){
+ if(S.notify.last[key])return;
+ if(await showNotice(title,body,key)){S.notify.last[key]=1;save()}
+ else if(Notification.permission==='granted'&&Date.now()-lastNotificationFailureToast>60000){lastNotificationFailureToast=Date.now();toast('Could not display a notification. Check device notification settings.')}
+}
 function dateISO(offset){const d=new Date();d.setDate(d.getDate()+offset);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
 function weekStart(date){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
 function checkinKey(){const f=S.notify.frequency;return f==='daily'?today():f==='weekly'?weekStart(today()):today().slice(0,7)}
 async function runReminders(){
- if(!S.notify.enabled||!('Notification'in window)||Notification.permission!=='granted')return;
+ if(!S.notify.enabled||notificationPlatformIssue()||!('Notification'in window)||Notification.permission!=='granted')return;
  const now=today(),month=now.slice(0,7),monthExpenses=mt(month),spent=sum(monthExpenses,'e'),budget=S.bud.total;
  const monthKey='-'+month,monthDays=new Date(+month.slice(0,4),+month.slice(5),0).getDate(),dailyBudget=budget?Math.round(budget/monthDays):0;
  if(!budget)await noticeOnce('nobudget'+monthKey,'Set your monthly budget','A new month is a good time to set your monthly budget.');
@@ -430,9 +467,30 @@ async function runReminders(){
 const A={
 tutorial(){showTour()},tourPrev(){if(tourIndex>0){tourIndex--;renderTour()}},tourNext(){if(tourIndex<TOUR.length-1){tourIndex++;renderTour()}else finishTour()},tourSkip(){finishTour()},
 shortcutHelp(){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('shortcut','add-transaction');sheet(`<h2>Add Transaction Shortcut</h2><p class="mu" style="margin-bottom:12px">This web app can be launched from Apple Shortcuts using its native <b>Open URLs</b> action. It is not a native iOS App Intent; this app has no iOS app target.</p><p class="mu" style="margin-bottom:8px"><b>1.</b> In Shortcuts, tap <b>+</b>, add <b>Open URLs</b>, then paste this link:</p><input aria-label="Shortcut URL" readonly value="${esc(url.href)}" onclick="this.select()"><p class="mu" style="margin-top:12px"><b>2.</b> Open the shortcut details, rename it <b>Add Transaction</b>, and add it to Siri if desired.</p><p class="mu" style="margin-top:10px"><b>3.</b> To use Back Tap, open iPhone <b>Settings → Accessibility → Touch → Back Tap</b>, choose Double Tap or Triple Tap, then select <b>Add Transaction</b> under Shortcuts.</p><p class="mu" style="margin-top:10px">When launched, the shortcut opens the transaction form. Your budget is stored in this browser on this device. Google sign-in is optional; Google Drive sync must be connected separately to sync a backup. If offline, the transaction saves locally and sync resumes after reconnecting.</p><button class="btn g" data-a="shortcutOpen">Try Add Transaction</button><button class="btn" data-a="close">Done</button>`)},
-async notifEnable(){if(!('Notification'in window))return toast('This browser does not support notifications');if(!window.isSecureContext)return toast('Notifications require HTTPS or localhost');try{const p=await Notification.requestPermission();S.notify.enabled=p==='granted';if(p==='granted'){if(S.notify.frequency==='off')S.notify.frequency='weekly';save();draw();await runReminders();toast('Notifications enabled')}else{save();toast('Notification permission not granted')}}catch(e){toast('Could not enable notifications')}},
+async notifEnable(){
+ const issue=notificationPlatformIssue();if(issue)return toast(issue);
+ if(Notification.permission==='denied')return toast('Notifications are blocked. Allow them in your device or browser settings, then try again.');
+ try{
+  const p=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  S.notify.enabled=p==='granted';
+  if(p==='granted'&&S.notify.frequency==='off')S.notify.frequency='weekly';
+  save();draw();
+  if(p==='granted'){await runReminders();toast('Notifications enabled')}
+  else toast('Notification permission was not granted')
+ }catch(e){console.error('Could not enable notifications',e);toast('Could not enable notifications. Check your device settings and try again.')}
+},
 settingJump(id){const el=document.getElementById(id);if(!el)return toast('Setting not available');el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('setting-match');setTimeout(()=>el.classList.remove('setting-match'),1400)},
-async notifTest(){if(!('Notification'in window))return toast('This browser does not support notifications');if(!window.isSecureContext)return toast('Notifications require HTTPS or localhost');try{if(Notification.permission!=='granted'){const p=await Notification.requestPermission();if(p!=='granted')return toast('Notification permission not granted')}S.notify.enabled=true;if(S.notify.frequency==='off')S.notify.frequency='weekly';save();draw();const ok=await showNotice('Test notification','Your notifications are working! Budget reminders will appear here.','test-notification');toast(ok?'Test notification sent':'Could not show a notification')}catch(e){toast('Could not send test notification')}},
+async notifTest(){
+ const issue=notificationPlatformIssue();if(issue)return toast(issue);
+ if(Notification.permission==='denied')return toast('Notifications are blocked. Allow them in your device or browser settings, then try again.');
+ try{
+  const p=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  if(p!=='granted')return toast('Notification permission was not granted');
+  S.notify.enabled=true;if(S.notify.frequency==='off')S.notify.frequency='weekly';save();draw();
+  const shown=await showNotice('Test notification','Your notifications are working! Budget reminders will appear here.','test-notification');
+  toast(shown?'Test notification sent':'Could not show the test notification. Check device notification settings.')
+ }catch(e){console.error('Could not send test notification',e);toast('Could not send the test notification. Check device settings and try again.')}
+},
 bioSetup(){if(!bioSupported())return sheet(`<h2>Biometrics unavailable</h2><p class="mu">Use a supported browser over HTTPS (or localhost). You can continue using your PIN.</p><button class="btn" data-a="close">OK</button>`);sheet(`<h2>Enable biometric unlock</h2><p class="mu">Your device will ask for its available biometric or passkey verification. On iPhone this may be Face ID; on Android it may be fingerprint. The browser and operating system choose the method.</p><button class="btn" data-a="bioCreate">Continue with ${bioLabel()}</button><button class="btn g" data-a="close">Cancel</button>`)},
 async bioCreate(){try{if(!bioSupported())throw Error('Biometric authentication is unavailable');const challenge=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16));const cred=await navigator.credentials.create({publicKey:{challenge,rp:{name:'My Personal Budget'},user:{id:uid,name:(S.user&&S.user.name||'budget-user').replace(/[^a-z0-9._-]/gi,'').slice(0,48)||'budget-user',displayName:S.user&&S.user.name||'Budget user'},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'preferred',userVerification:'required'},timeout:60000,attestation:'none'}});if(!cred)throw Error('No credential returned');S.user=S.user||{name:'Guest'};S.user.biometricId=b64u(cred.rawId);S.user.biometricLabel=bioLabel();save();close();draw();toast('Biometric unlock enabled')}catch(e){toast(e&&e.name==='NotAllowedError'?'Biometric setup was cancelled':(e.message||'Could not set up biometrics'))}},
 bioRemove(){if(S.user){delete S.user.biometricId;delete S.user.biometricLabel;save();draw();toast('Biometric unlock disabled')}},
@@ -489,7 +547,7 @@ guest(){S.user={name:'Guest'};save();enter()},
 async key(p){if(p==='b')pad=pad.slice(0,-1);else if(pad.length<4)pad+=p;dots();if(pad.length===4){if((await hp(pad))===S.user.pin){pad='';enter()}else{const d=$('#dots');d.classList.add('sk');setTimeout(()=>{pad='';dots();d.classList.remove('sk')},450)}}},
 forgot(){sheet(`<h2>Forgot your PIN?</h2><p class="mu">The PIN cannot be recovered. You can erase everything on this device and start again.</p><button class="btn d" data-a="wipego">Erase and start again</button><button class="btn g" data-a="close">Cancel</button>`)}
 };
-const I={q(v){q=v;$('#lst').innerHTML=listH()},settingsSearch(v){settingQuery=v;const results=$('#settings-search-results');if(results)results.innerHTML=settingsSearchResults(v)},cur(v){S.cur=v;save();draw()},frequency(v){S.notify.frequency=v;S.notify.enabled=v!=='off'&&Notification.permission==='granted';save();toast('Reminder frequency updated')}};
+const I={q(v){q=v;$('#lst').innerHTML=listH()},settingsSearch(v){settingQuery=v;const results=$('#settings-search-results');if(results)results.innerHTML=settingsSearchResults(v)},cur(v){S.cur=v;save();draw()},frequency(v){S.notify.frequency=v;S.notify.enabled=v!=='off'&&'Notification'in window&&Notification.permission==='granted';save();toast('Reminder frequency updated')}};
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const f=A[t.dataset.a];if(f){e.preventDefault();f(t.dataset.p,t,e)}});
 document.addEventListener('input',e=>{const t=e.target.closest('[data-i]');if(t&&I[t.dataset.i])I[t.dataset.i](t.value)});
 const dots=()=>{const d=$('#dots');if(d)d.innerHTML=[0,1,2,3].map(i=>`<i class="${i<pad.length?'f':''}"></i>`).join('')};
@@ -532,7 +590,7 @@ async function driveConnect(){if(!S.user||!S.user.google)return toast('Sign in w
 function driveSyncNow(){if(!S.user||!S.user.driveSync)return driveConnect();if(driveToken&&Date.now()<driveExp-60000)return syncNow(true);syncing||setSt('busy');syncNow(true)}
 function driveOff(){try{if(driveToken&&window.google)google.accounts.oauth2.revoke(driveToken)}catch(e){}driveToken='';vTok='';delete S.user.driveSync;persist();draw();toast('Drive sync disconnected. Your Drive copy was kept.')}
 addEventListener('online',scheduleSync);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleSync()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){scheduleSync();runReminders();const h=$('#notification-help'),b=$('#setting-notif-enable');if(h)h.textContent=notificationSettingsText();if(b)b.textContent=notificationButtonText()}});
 function jwt(t){let p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');while(p.length%4)p+='=';return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p),c=>c.charCodeAt(0))))}
 function gcb(r){try{const u=jwt(r.credential);S.user=Object.assign(S.user||{},{name:u.given_name||u.name||'Friend',email:u.email,pic:u.picture,google:1});save();enter()}catch(e){toast('Google sign-in failed')}}
 function ginit(n=0){const b=$('#gbtn');if(!b||!GOOGLE_CLIENT_ID)return;if(window.google&&google.accounts){google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:gcb});google.accounts.id.renderButton(b,{theme:'outline',size:'large',shape:'pill',text:'continue_with',width:280})}else if(n<25)setTimeout(()=>ginit(n+1),400)}
