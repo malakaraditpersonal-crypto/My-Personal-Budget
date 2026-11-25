@@ -212,7 +212,7 @@ function post(){
   dots.forEach((d,i)=>d.addEventListener('click',()=>slider.scrollTo({left:i*slider.clientWidth,behavior:'smooth'})));
  }
 }
-function count(el){const to=+el.dataset.cu,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);el.textContent=fmt(Math.round(to*e));if(k<1)requestAnimationFrame(f)})(t0)}
+function count(el){const to=+el.dataset.cu,negative=el.dataset.neg==='1',t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);const v=Math.round(to*e);el.textContent=(negative?'− ':'')+fmt(v);if(k<1)requestAnimationFrame(f)})(t0)}
 function stats(){const l=mt(M),inc=sum(l,'i'),exp=sum(l,'e');const[y,m]=M.split('-').map(Number);const dim=new Date(y,m,0).getDate(),cm=today().slice(0,7);const n=M===cm?new Date().getDate():(M<cm?dim:1);return{l,inc,exp,avg:Math.round(exp/n)}}
 function home(){const{l,inc,exp,avg}=stats();const total=S.acc.reduce((s,a)=>s+bal(a),0),B=S.bud.total;
  const bh=B?`<div class="bw"><div class="row"><span>Monthly budget</span><span class="mu">${Math.round(exp/B*100)}% used</span></div><div class="bar"><i class="${exp>B?'over':''}" style="--w:${Math.min(100,exp/B*100)}%"></i></div><div class="row mu"><span>Spent ${fmt(exp)}</span><span>${exp>B?'Over by '+fmt(exp-B):'Left '+fmt(B-exp)}</span></div></div>`:`<div class="mu bw">No monthly budget yet. <a href="#" data-a="tab" data-p="bud" style="color:var(--tx)">Set one</a></div>`;
@@ -221,11 +221,11 @@ function home(){const{l,inc,exp,avg}=stats();const total=S.acc.reduce((s,a)=>s+b
  return`<div class="row home-top"><div class="mu">${gr}${S.user&&S.user.name&&S.user.name!=='Guest'?', '+esc(S.user.name):''}</div>${S.user&&S.user.driveSync?'<button class="sync-icon" data-a="driveSyncNow" aria-label="Sync now" title="Sync now"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg></button>':''}</div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div>${monthNav()}
  <div class="summary-slider" id="summarySlider">
   <div class="summary-track">
+   <div class="summary-slide"><div><span class="mu">Expenses</span><b data-cu="${exp}" data-neg="1">− ${fmt(exp)}</b></div></div>
    <div class="summary-slide"><div><span class="mu">Income</span><b data-cu="${inc}">${fmt(inc)}</b></div></div>
-   <div class="summary-slide"><div><span class="mu">Expenses</span><b data-cu="${exp}">${fmt(exp)}</b></div></div>
   </div>
  </div>
- <div class="summary-dots" aria-label="Income and expenses"><button class="on" aria-label="Show income"></button><button aria-label="Show expenses"></button></div>
+ <div class="summary-dots" aria-label="Expenses and income"><button class="on" aria-label="Show expenses"></button><button aria-label="Show income"></button></div>
  <div class="mu" style="margin:10px 0 24px">Average ${fmt(avg)} a day</div>${bh}
  <h3>Recent</h3>${rec.length?rec.map(txRow).join(''):empty('No transactions this month.<br>Tap + to add your first.')}`}
 const filt=()=>S.tx.filter(t=>(ft==='all'||t.type===ft)&&((t.note||'')+' '+(t.cat||'')).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
