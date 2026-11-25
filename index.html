@@ -176,9 +176,10 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad2=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
-let amountsHidden=true;
-const fmt=n=>{const c=CUR[S.cur]||CUR.NPR;return c[0]+' '+(amountsHidden?'••••':(n/100).toLocaleString(c[1],{minimumFractionDigits:0,maximumFractionDigits:c[2]}))};
-const privacyButton=(floating=false)=>`<button class="sync-icon privacy-toggle${floating?' privacy-floating':''}" data-a="toggleAmounts" aria-label="${amountsHidden?'Show':'Hide'} amounts" aria-pressed="${!amountsHidden}" title="${amountsHidden?'Show':'Hide'} amounts"><svg viewBox="0 0 24 24">${amountsHidden?'<path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.7 15.7 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.1-.8"/>':'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'}</svg></button>`;
+let accountBalancesHidden=true;
+const fmt=n=>{const c=CUR[S.cur]||CUR.NPR;return c[0]+' '+(n/100).toLocaleString(c[1],{minimumFractionDigits:0,maximumFractionDigits:c[2]})};
+const fmtAccount=n=>accountBalancesHidden?(CUR[S.cur]||CUR.NPR)[0]+' ••••':fmt(n);
+const privacyButton=(floating=false)=>`<button class="sync-icon privacy-toggle${floating?' privacy-floating':''}" data-a="toggleAccountBalances" aria-label="${accountBalancesHidden?'Show':'Hide'} account balances" aria-pressed="${!accountBalancesHidden}" title="${accountBalancesHidden?'Show':'Hide'} account balances"><svg viewBox="0 0 24 24">${accountBalancesHidden?'<path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.7 15.7 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.1-.8"/>':'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'}</svg></button>`;
 const LOGO='<rect width="100" height="100" rx="30" stroke="none"/><circle class="rg" cx="50" cy="50" r="24" transform="rotate(-60 50 50)"/><circle class="dt" cx="50" cy="50" r="6" stroke="none"/>';
 let S,tab='home',M=today().slice(0,7),q='',settingQuery='',ft='all',F=null,pad='',shortcutForm=false;
 const startupUrl=new URL(location.href);
@@ -226,13 +227,13 @@ function post(){
   dots.forEach((d,i)=>d.addEventListener('click',()=>slider.scrollTo({left:i*slider.clientWidth,behavior:'smooth'})));
  });
 }
-function count(el){const to=+el.dataset.cu,negative=el.dataset.neg==='1',t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);const v=Math.round(to*e);el.textContent=(negative?'− ':'')+fmt(v);if(k<1)requestAnimationFrame(f)})(t0)}
+function count(el){const to=+el.dataset.cu,negative=el.dataset.neg==='1',format=el.dataset.accountBalance?fmtAccount:fmt,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);const v=Math.round(to*e);el.textContent=(negative?'− ':'')+format(v);if(k<1)requestAnimationFrame(f)})(t0)}
 function stats(){const l=mt(M),inc=sum(l,'i'),exp=sum(l,'e');const[y,m]=M.split('-').map(Number);const dim=new Date(y,m,0).getDate(),cm=today().slice(0,7);const n=M===cm?new Date().getDate():(M<cm?dim:1);return{l,inc,exp,avg:Math.round(exp/n)}}
 function home(){const{l,inc,exp,avg}=stats();const total=S.acc.reduce((s,a)=>s+bal(a),0),B=S.bud.total;
  const bh=B?`<div class="bw"><div class="row"><span>Monthly budget</span><span class="mu">${Math.round(exp/B*100)}% used</span></div><div class="bar"><i class="${exp>B?'over':''}" style="--w:${Math.min(100,exp/B*100)}%"></i></div><div class="row mu"><span>Spent ${fmt(exp)}</span><span>${exp>B?'Over by '+fmt(exp-B):'Left '+fmt(B-exp)}</span></div></div>`:`<div class="mu bw">No monthly budget yet. <a href="#" data-a="tab" data-p="bud" style="color:var(--tx)">Set one</a></div>`;
  const rec=l.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,5);
  const hi=new Date().getHours(),gr=hi<12?'Good morning':hi<18?'Good afternoon':'Good evening';
- const balanceSlides=[`<div class="summary-slide"><div><div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div></div>${privacyButton()}</div></div>`,...S.acc.map(a=>`<div class="summary-slide"><div><div><div class="big" data-cu="${bal(a)}">${fmt(bal(a))}</div><div class="mu">${esc(a.name)} balance</div></div>${privacyButton()}</div></div>`)];
+ const balanceSlides=[`<div class="summary-slide"><div><div><div class="big" data-cu="${total}" data-account-balance="true">${fmtAccount(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div></div>${privacyButton()}</div></div>`,...S.acc.map(a=>`<div class="summary-slide"><div><div><div class="big" data-cu="${bal(a)}" data-account-balance="true">${fmtAccount(bal(a))}</div><div class="mu">${esc(a.name)} balance</div></div>${privacyButton()}</div></div>`)];
  return`<div class="row home-top"><div class="mu">${gr}${S.user&&S.user.name&&S.user.name!=='Guest'?', '+esc(S.user.name):''}</div>${S.user&&S.user.driveSync?'<button class="sync-icon" data-a="driveSyncNow" aria-label="Sync now" title="Sync now"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg></button>':''}</div>
  <div class="summary-slider" id="balanceSlider"><div class="summary-track">${balanceSlides.join('')}</div></div>
  <div class="summary-dots" aria-label="Balance views">${balanceSlides.map((_,i)=>`<button class="${i?'':'on'}" aria-label="${i?'Show account balance':'Show total balance'}"></button>`).join('')}</div>${monthNav()}
@@ -329,7 +330,7 @@ function settingsSearchResults(query){
 function pro(){const n=S.user&&S.user.name||'You',u=S.user||{};
  return`<section class="pro"><div class="row" style="justify-content:flex-start;gap:16px;margin-bottom:8px"><div class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc(n[0].toUpperCase())}</div><div><h2 style="margin:0">${esc(n)}</h2><div class="mu">${u.email?esc(u.email)+' · ':''}${u.pin?'PIN lock on':'No PIN set'}</div></div></div>
  <div class="settings-search"><label class="sr" for="settings-search">Search settings</label><input id="settings-search" type="search" data-i="settingsSearch" placeholder="Search Settings" autocomplete="off" value="${esc(settingQuery)}"><div id="settings-search-results" aria-live="polite">${settingsSearchResults(settingQuery)}</div></div>
- <h3 id="setting-accounts">Accounts</h3>${S.acc.map(a=>`<div class="li" id="setting-account-${a.id}" data-a="aform" data-p="${a.id}"><div>${esc(a.name)}<small>${a.type}</small></div><b>${fmt(bal(a))}</b></div>`).join('')}<button class="btn g" id="setting-add-account" data-a="aform">Add account</button>
+ <h3 id="setting-accounts">Accounts</h3>${S.acc.map(a=>`<div class="li" id="setting-account-${a.id}" data-a="aform" data-p="${a.id}"><div>${esc(a.name)}<small>${a.type}</small></div><b>${fmtAccount(bal(a))}</b></div>`).join('')}<button class="btn g" id="setting-add-account" data-a="aform">Add account</button>
  <h3 id="setting-app">App</h3><button class="btn g" id="setting-install" data-a="install" style="display:${installPrompt?'block':'none'};margin-top:0">Install app</button><p class="mu" id="offline-note" style="margin-top:8px">Works offline after the first visit when installed.</p><button class="btn g" data-a="shortcutHelp">Set up Add Transaction Shortcut</button>
  <h3>Appearance</h3><div id="setting-theme" style="margin-bottom:14px">${[['','Auto'],['light','Light'],['dark','Dark']].map(([k,n])=>`<button class="chip ${S.theme===k?'on':''}" data-a="theme" data-p="${k}">${n}</button>`).join('')}</div>
  <h3 id="setting-calendar">Calendar</h3><div style="margin-bottom:6px">${[['ad','English (AD)'],['bs','Nepali (BS)']].map(([k,n])=>`<button class="chip ${S.cal===k?'on':''}" data-a="calset" data-p="${k}">${n}</button>`).join('')}</div><p class="mu" style="margin-bottom:6px">Sets the calendar shown in the Calendar tab. Both dates are always visible on each day.</p>
@@ -437,7 +438,7 @@ async bioCreate(){try{if(!bioSupported())throw Error('Biometric authentication i
 bioRemove(){if(S.user){delete S.user.biometricId;delete S.user.biometricLabel;save();draw();toast('Biometric unlock disabled')}},
 async bioUnlock(){try{if(!bioSupported()||!S.user||!S.user.biometricId)throw Error('Biometric unlock is not set up');const assertion=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:'public-key',id:fromB64u(S.user.biometricId)}],userVerification:'required',timeout:60000}});if(!assertion)throw Error('Authentication failed');pad='';enter()}catch(e){toast(e&&e.name==='NotAllowedError'?'Biometric unlock cancelled':(e.message||'Biometric unlock failed'))}},
 tab(p){tab=p;if(p==='cal'){cinit();sel=today()}draw();scrollTo(0,0)},
-toggleAmounts(){amountsHidden=!amountsHidden;draw()},
+toggleAccountBalances(){accountBalancesHidden=!accountBalancesHidden;draw()},
 cshift(p){let y=C.y,m=C.m+ +p;while(m<1){m+=12;y--}while(m>12){m-=12;y++}if(C.bs&&!BSD[y])return toast('Out of supported range');C.y=y;C.m=m;draw()},
 cday(p){sel=p;draw()},
 ctoday(){cinit();sel=today();draw()},
