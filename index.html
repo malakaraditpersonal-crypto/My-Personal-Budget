@@ -122,7 +122,7 @@ textarea{width:100%;height:150px;font:12px monospace;color:var(--tx);background:
 .gsetup{width:100%;border:1px solid var(--ln);background:none;border-radius:99px;padding:12px;font-size:15px}
 .gsetup:hover,.chip:hover,.mn button:hover{background:var(--sf)}
 .gsetup:focus-visible,input:focus-visible,select:focus-visible,.chip:focus-visible,.mn button:focus-visible,.btn:focus-visible{outline:2px solid var(--tx);outline-offset:3px}
-.tour-progress{height:5px;background:var(--ac);border-radius:9px;overflow:hidden;margin:18px 0}.tour-progress i{display:block;height:100%;background:var(--tx);width:var(--w);transition:width .2s}.setting-note{margin:8px 0 12px}.home-top{min-height:30px}.sync-icon{width:38px;height:38px;flex:none;border:1px solid var(--ln);border-radius:50%;background:var(--sf);display:grid;place-items:center}.sync-icon svg{width:19px;height:19px}.pro h3{margin:23px 0 9px;padding-top:12px;border-top:1px solid var(--ln)}.pro .btn.g{margin-top:7px}.pro .chip{margin-bottom:4px}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.tour-progress{height:5px;background:var(--ac);border-radius:9px;overflow:hidden;margin:18px 0}.tour-progress i{display:block;height:100%;background:var(--tx);width:var(--w);transition:width .2s}.setting-note{margin:8px 0 12px}.home-top{min-height:30px}.sync-icon{width:38px;height:38px;flex:none;border:1px solid var(--ln);border-radius:50%;background:var(--sf);display:grid;place-items:center}.sync-icon svg{width:19px;height:19px}.privacy-floating{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:20px;z-index:6}.pro h3{margin:23px 0 9px;padding-top:12px;border-top:1px solid var(--ln)}.pro .btn.g{margin-top:7px}.pro .chip{margin-bottom:4px}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:380px){#app{padding:20px 16px 148px}.big{font-size:40px}h2{font-size:25px}.two{gap:8px}.two>div{padding:13px;border-radius:18px}.pad{grid-template-columns:repeat(3,68px);gap:12px}.pad button{height:68px}}
 @media(min-width:700px){#app{padding-top:32px}.sh{border-radius:30px;margin-bottom:12px}}
 @keyframes grow{from{width:0}}@keyframes growh{from{transform:scaleY(0)}}
@@ -176,7 +176,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad2=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
-const fmt=n=>{const c=CUR[S.cur]||CUR.NPR;return c[0]+' '+(n/100).toLocaleString(c[1],{minimumFractionDigits:0,maximumFractionDigits:c[2]})};
+let amountsHidden=true;
+const fmt=n=>{const c=CUR[S.cur]||CUR.NPR;return c[0]+' '+(amountsHidden?'••••':(n/100).toLocaleString(c[1],{minimumFractionDigits:0,maximumFractionDigits:c[2]}))};
+const privacyButton=(floating=false)=>`<button class="sync-icon privacy-toggle${floating?' privacy-floating':''}" data-a="toggleAmounts" aria-label="${amountsHidden?'Show':'Hide'} amounts" aria-pressed="${!amountsHidden}" title="${amountsHidden?'Show':'Hide'} amounts"><svg viewBox="0 0 24 24">${amountsHidden?'<path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.7 15.7 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.1-.8"/>':'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'}</svg></button>`;
 const LOGO='<rect width="100" height="100" rx="30" stroke="none"/><circle class="rg" cx="50" cy="50" r="24" transform="rotate(-60 50 50)"/><circle class="dt" cx="50" cy="50" r="6" stroke="none"/>';
 let S,tab='home',M=today().slice(0,7),q='',settingQuery='',ft='all',F=null,pad='',shortcutForm=false;
 const startupUrl=new URL(location.href);
@@ -211,7 +213,7 @@ function txRow(t){const a=S.acc.find(x=>x.id==t.acc),b=S.acc.find(x=>x.id==t.to)
 function draw(){
  $('#nav').innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="tab" data-p="${k}"><svg viewBox="0 0 24 24">${icons[k]}</svg>${l}</button>`).join('');
  $('#fab').style.display=tab==='pro'?'none':'';
- const a=$('#app');a.className='';a.innerHTML=({home,act,cal,bud,ins,pro})[tab]();void a.offsetWidth;a.className='pg';post()}
+ const a=$('#app');a.className='';a.innerHTML=({home,act,cal,bud,ins,pro})[tab]();if(tab!=='home')a.insertAdjacentHTML('beforeend',privacyButton(true));void a.offsetWidth;a.className='pg';post()}
 function post(){
  document.querySelectorAll('#app .li,#app .two>div,#app .summary-slide>div,#app .goal,#app .bw,#app h3').forEach((e,i)=>{e.classList.add('rs');e.style.animationDelay=Math.min(i,14)*40+'ms'});
  document.querySelectorAll('[data-cu]').forEach(count);
@@ -230,7 +232,7 @@ function home(){const{l,inc,exp,avg}=stats();const total=S.acc.reduce((s,a)=>s+b
  const bh=B?`<div class="bw"><div class="row"><span>Monthly budget</span><span class="mu">${Math.round(exp/B*100)}% used</span></div><div class="bar"><i class="${exp>B?'over':''}" style="--w:${Math.min(100,exp/B*100)}%"></i></div><div class="row mu"><span>Spent ${fmt(exp)}</span><span>${exp>B?'Over by '+fmt(exp-B):'Left '+fmt(B-exp)}</span></div></div>`:`<div class="mu bw">No monthly budget yet. <a href="#" data-a="tab" data-p="bud" style="color:var(--tx)">Set one</a></div>`;
  const rec=l.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,5);
  const hi=new Date().getHours(),gr=hi<12?'Good morning':hi<18?'Good afternoon':'Good evening';
- const balanceSlides=[`<div class="summary-slide"><div><div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div></div></div></div>`,...S.acc.map(a=>`<div class="summary-slide"><div><div><div class="big" data-cu="${bal(a)}">${fmt(bal(a))}</div><div class="mu">${esc(a.name)} balance</div></div></div></div>`)];
+ const balanceSlides=[`<div class="summary-slide"><div><div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div></div>${privacyButton()}</div></div>`,...S.acc.map(a=>`<div class="summary-slide"><div><div><div class="big" data-cu="${bal(a)}">${fmt(bal(a))}</div><div class="mu">${esc(a.name)} balance</div></div>${privacyButton()}</div></div>`)];
  return`<div class="row home-top"><div class="mu">${gr}${S.user&&S.user.name&&S.user.name!=='Guest'?', '+esc(S.user.name):''}</div>${S.user&&S.user.driveSync?'<button class="sync-icon" data-a="driveSyncNow" aria-label="Sync now" title="Sync now"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg></button>':''}</div>
  <div class="summary-slider" id="balanceSlider"><div class="summary-track">${balanceSlides.join('')}</div></div>
  <div class="summary-dots" aria-label="Balance views">${balanceSlides.map((_,i)=>`<button class="${i?'':'on'}" aria-label="${i?'Show account balance':'Show total balance'}"></button>`).join('')}</div>${monthNav()}
@@ -435,6 +437,7 @@ async bioCreate(){try{if(!bioSupported())throw Error('Biometric authentication i
 bioRemove(){if(S.user){delete S.user.biometricId;delete S.user.biometricLabel;save();draw();toast('Biometric unlock disabled')}},
 async bioUnlock(){try{if(!bioSupported()||!S.user||!S.user.biometricId)throw Error('Biometric unlock is not set up');const assertion=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:'public-key',id:fromB64u(S.user.biometricId)}],userVerification:'required',timeout:60000}});if(!assertion)throw Error('Authentication failed');pad='';enter()}catch(e){toast(e&&e.name==='NotAllowedError'?'Biometric unlock cancelled':(e.message||'Biometric unlock failed'))}},
 tab(p){tab=p;if(p==='cal'){cinit();sel=today()}draw();scrollTo(0,0)},
+toggleAmounts(){amountsHidden=!amountsHidden;draw()},
 cshift(p){let y=C.y,m=C.m+ +p;while(m<1){m+=12;y--}while(m>12){m-=12;y++}if(C.bs&&!BSD[y])return toast('Out of supported range');C.y=y;C.m=m;draw()},
 cday(p){sel=p;draw()},
 ctoday(){cinit();sel=today();draw()},
