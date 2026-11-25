@@ -204,13 +204,14 @@ function draw(){
 function post(){
  document.querySelectorAll('#app .li,#app .two>div,#app .summary-slide>div,#app .goal,#app .bw,#app h3').forEach((e,i)=>{e.classList.add('rs');e.style.animationDelay=Math.min(i,14)*40+'ms'});
  document.querySelectorAll('[data-cu]').forEach(count);
- const slider=$('#summarySlider');
- if(slider){
-  const dots=[...$('#app').querySelectorAll('.summary-dots button')];
+ document.querySelectorAll('.summary-slider').forEach(slider=>{
+  const dotWrap=slider.nextElementSibling;
+  if(!dotWrap||!dotWrap.classList.contains('summary-dots'))return;
+  const dots=[...dotWrap.querySelectorAll('button')];
   const update=()=>{const i=Math.round(slider.scrollLeft/slider.clientWidth);dots.forEach((d,n)=>d.classList.toggle('on',n===i))};
   slider.addEventListener('scroll',()=>requestAnimationFrame(update),{passive:true});
   dots.forEach((d,i)=>d.addEventListener('click',()=>slider.scrollTo({left:i*slider.clientWidth,behavior:'smooth'})));
- }
+ });
 }
 function count(el){const to=+el.dataset.cu,negative=el.dataset.neg==='1',t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);const v=Math.round(to*e);el.textContent=(negative?'− ':'')+fmt(v);if(k<1)requestAnimationFrame(f)})(t0)}
 function stats(){const l=mt(M),inc=sum(l,'i'),exp=sum(l,'e');const[y,m]=M.split('-').map(Number);const dim=new Date(y,m,0).getDate(),cm=today().slice(0,7);const n=M===cm?new Date().getDate():(M<cm?dim:1);return{l,inc,exp,avg:Math.round(exp/n)}}
@@ -218,7 +219,10 @@ function home(){const{l,inc,exp,avg}=stats();const total=S.acc.reduce((s,a)=>s+b
  const bh=B?`<div class="bw"><div class="row"><span>Monthly budget</span><span class="mu">${Math.round(exp/B*100)}% used</span></div><div class="bar"><i class="${exp>B?'over':''}" style="--w:${Math.min(100,exp/B*100)}%"></i></div><div class="row mu"><span>Spent ${fmt(exp)}</span><span>${exp>B?'Over by '+fmt(exp-B):'Left '+fmt(B-exp)}</span></div></div>`:`<div class="mu bw">No monthly budget yet. <a href="#" data-a="tab" data-p="bud" style="color:var(--tx)">Set one</a></div>`;
  const rec=l.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,5);
  const hi=new Date().getHours(),gr=hi<12?'Good morning':hi<18?'Good afternoon':'Good evening';
- return`<div class="row home-top"><div class="mu">${gr}${S.user&&S.user.name&&S.user.name!=='Guest'?', '+esc(S.user.name):''}</div>${S.user&&S.user.driveSync?'<button class="sync-icon" data-a="driveSyncNow" aria-label="Sync now" title="Sync now"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg></button>':''}</div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div>${monthNav()}
+ const balanceSlides=[`<div class="summary-slide"><div><div><div class="big" data-cu="${total}">${fmt(total)}</div><div class="mu">Total balance across ${S.acc.length} accounts</div></div></div></div>`,...S.acc.map(a=>`<div class="summary-slide"><div><div><div class="big" data-cu="${bal(a)}">${fmt(bal(a))}</div><div class="mu">${esc(a.name)} balance</div></div></div></div>`)];
+ return`<div class="row home-top"><div class="mu">${gr}${S.user&&S.user.name&&S.user.name!=='Guest'?', '+esc(S.user.name):''}</div>${S.user&&S.user.driveSync?'<button class="sync-icon" data-a="driveSyncNow" aria-label="Sync now" title="Sync now"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg></button>':''}</div>
+ <div class="summary-slider" id="balanceSlider"><div class="summary-track">${balanceSlides.join('')}</div></div>
+ <div class="summary-dots" aria-label="Balance views">${balanceSlides.map((_,i)=>`<button class="${i?'':'on'}" aria-label="${i?'Show account balance':'Show total balance'}"></button>`).join('')}</div>${monthNav()}
  <div class="summary-slider" id="summarySlider">
   <div class="summary-track">
    <div class="summary-slide"><div><span class="mu">Expenses</span><b data-cu="${exp}" data-neg="1">− ${fmt(exp)}</b></div></div>
@@ -347,8 +351,8 @@ fsave(){keepF();if(!(F.amt>0))return $('#fa').focus();if(!F.date)return $('#fd')
  if(F.type==='e')S.last.cat=F.cat;S.last.acc=F.acc;M=F.date.slice(0,7);save();close();draw();
  const catLimit=F.type==='e'?+(S.bud.cats[F.cat]||0):0,catSpent=catLimit?(spentBy(mt(M))[F.cat]||0):0,catOver=catLimit&&catSpent>catLimit,totalSpent=F.type==='e'?sum(mt(M),'e'):0,totalOver=F.type==='e'&&S.bud.total&&totalSpent>S.bud.total;toast(catOver?'Saved · over '+F.cat+' budget':totalOver?'Saved · over monthly budget':'Saved');if(F.type==='e'&&S.notify.enabled&&'Notification'in window&&Notification.permission==='granted'){const catLevel=catLimit?(catSpent>=catLimit?'over':catSpent>=catLimit*.8?'near':''):'',totalLevel=S.bud.total?(totalSpent>=S.bud.total?'over':totalSpent>=S.bud.total*.8?'near':''):'';const level=catLevel==='over'||totalLevel==='over'?'over':catLevel==='near'||totalLevel==='near'?'near':'';const category=catLevel?F.cat:'monthly',key='expense-'+M+'-'+category+'-'+level;if(level&&!S.notify.last[key]){S.notify.last[key]=1;save();showNotice(level==='over'?'Budget limit reached':'Budget almost used',category==='monthly'?(level==='over'?'Your monthly budget has been exceeded.':'You have used at least 80% of your monthly budget.'):(level==='over'?'Your '+category+' category budget has been exceeded.':'You have used at least 80% of your '+category+' budget.'),key)}}},
 fdel(p,b){if(b.dataset.s!=='1'){b.dataset.s='1';return b.textContent='Tap again to confirm'}S.tx=S.tx.filter(x=>x.id!=F.id);save();close();draw();toast('Deleted')},
-bform(c){const v=c==='_'?S.bud.total:(S.bud.cats[c]||0);sheet(`<h2>${c==='_'?'Monthly budget':c}</h2><input id="bv" class="amt" inputmode="decimal" placeholder="0" value="${v?v/100:''}"><button class="btn" data-a="bsave" data-p="${c}">Save budget</button><button class="btn g" data-a="bsave" data-p="${c}|x">Remove limit</button>${c!=='_'&&v?`<button class="btn d" data-a="bdel" data-p="${c}">Delete this budget</button>`:''}`)},
-bdel(c){delete S.bud.cats[c];save();close();draw();toast('Budget deleted')},
+bform(c){const v=c==='_'?S.bud.total:(S.bud.cats[c]||0);sheet(`<h2>${c==='_'?'Monthly budget':c}</h2><input id="bv" class="amt" inputmode="decimal" placeholder="0" value="${v?v/100:''}"><button class="btn" data-a="bsave" data-p="${c}">Save budget</button>${c==='_'?'<button class="btn g" data-a="bsave" data-p="_|x">Remove limit</button>':'<button class="btn g" data-a="bsave" data-p="'+c+'|x">Remove limit</button><button class="btn d" data-a="bdel" data-p="'+c+'">Delete category budget</button>'}`)},
+bdel(c,b){if(b.dataset.s!=='1'){b.dataset.s='1';b.textContent='Tap again to confirm';return}delete S.bud.cats[c];save();close();draw();toast('Category budget deleted')},
 bsave(p){const[c,rm]=p.split('|');const v=rm?0:Math.round(parseFloat($('#bv').value||0)*100);if(isNaN(v)||v<0)return;if(c==='_')S.bud.total=v;else if(v)S.bud.cats[c]=v;else delete S.bud.cats[c];save();close();draw();toast('Budget saved')},
 gform(id){const g=id&&S.goals.find(x=>x.id==id);
  if(!g)return sheet(`<h2>New goal</h2><div class="f"><input id="gn" placeholder="Goal (laptop, trip…)"><input id="gt" inputmode="decimal" placeholder="Target amount"></div><button class="btn" data-a="gsave">Create goal</button>`);
